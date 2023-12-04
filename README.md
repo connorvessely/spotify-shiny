@@ -1,7 +1,7 @@
 # spotify-shiny
 
 ## Git Flow
-<img src = "./Assets/open-terminal.png" alt = "an image showing how to open a terminal with Windows 11"/>  
+![an image showing how to open a terminal with Windows 11](Assets/open-terminal.png)
 - open a terminal in the project folder, called spotify-shiny
 - on Windows, you can do this by opening the spotify-shiny folder in the file explorer, right click, and select `Open in Terminal`, as shown above
 - when you open the project to work on it, run `git pull`  
