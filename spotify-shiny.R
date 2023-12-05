@@ -7,9 +7,20 @@ if (!requireNamespace("shiny", quietly = TRUE)) {
 
 library(shiny)
 library(tidyverse)
+data_music = load("data-music.RData")
+
 
 ### ---- Define UI ----
-## test comment
+
+## top 3/10/20 whatever vs all slider
+
+## color by genre checkbox
+## plot_ly
+## four graphs: 
+##  energy vs loudness 
+##  acousticness vs speechiness 
+##  tempo vs danceability 
+##  boxplot popularity 
 
 # create vector of variable names
 # -> take out the categorical variables
