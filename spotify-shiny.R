@@ -7,7 +7,12 @@ if (!requireNamespace("shiny", quietly = TRUE)) {
 
 library(shiny)
 library(tidyverse)
-data_music = load("data-music.RData")
+library(shinyuieditor)
+library(plotly)
+library(gridlayout)
+library(bslib)
+library(dplyr)
+#data_music = load("data-music.RData")
 
 
 ### ---- Define UI ----
@@ -22,41 +27,8 @@ data_music = load("data-music.RData")
 ##  tempo vs danceability 
 ##  boxplot popularity 
 
-# create vector of variable names
-# -> take out the categorical variables
-vars <- setdiff(names(iris), "Species")
+launch_editor(app_loc = "spotify_app")
 
-ui <- fluidPage(
-  
-  titlePanel(title = "Shiny Iris Explorer App!"),
-  
-  sidebarPanel(
-    
-    # create dropdowns of variable names to plot
-    selectInput(inputId = "yvar",
-                label = "Choose Y Variable",
-                choices = vars),
-    selectInput(inputId = "xvar",
-                label = "Choose X Variable",
-                choices = vars,
-                selected = vars[[2]]),
-    
-    # create checkbox to optionally color by a categorical variable
-    checkboxInput(inputId = "species",
-                  label = "Color by Species",
-                  value = TRUE)
-  ),
-  
-  # create spot for plot
-  mainPanel(
-    plotOutput(outputId = "plot1")
-  )
-)
-
-### ---- Define server ----
-
-server <- function(input, output) {
-}
 
 ### ---- Run app ----
 shinyApp(ui, server)
