@@ -12,7 +12,8 @@ library(plotly)
 library(gridlayout)
 library(bslib)
 library(dplyr)
-data_music = load("data-music.RData")
+
+load("data-music.RData")
 head(data_music)
 
 
@@ -110,12 +111,13 @@ server <- function(input, output) {
     #head(numArtists)
   
   output$plotOutput1 <- renderPlot({
-    ggplot(data = data_music) + 
+    thing1 <- ggplot(data = data_music) + 
       geom_point(aes(x = energy,
                      y = loudness)) +
       labs(title = "Energy vs Loudness for Top Artists", #descriptive labels
            x = "Energy Level",
            y = "Loudness")
+    print(thing1)
   })
   
   output$plotOutput2 <- renderPlot({
