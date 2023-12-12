@@ -18,6 +18,8 @@ load("data-music.RData")
 # static version of slider control
 slider_val <- 10
 
+columns <- colnames(data_music[,sapply(data_music,is.numeric)])
+
 ### ---- Define UI ----
 
 ui <- grid_page(
@@ -28,8 +30,8 @@ ui <- grid_page(
   ),
   row_sizes = c(
     "70px",
-    "1.7fr",
-    "0.3fr"
+    "1.72fr",
+    "0.28fr"
   ),
   col_sizes = c(
     "250px",
@@ -41,13 +43,23 @@ ui <- grid_page(
     card_header("Controls"),
     card_body(
       sliderInput(
-        inputId = "topArtists",
+        inputId = "nArtists",
         label = "Top N Artists",
         min = 1,
         max = 100,
         value = 20,
         width = "100%",
         step = 10
+      ),
+      selectInput(
+        inputId = "xVar",
+        label = "Select X Variable",
+        choices = columns
+      ),
+      selectInput(
+        inputId = "yVar",
+        label = "Select Y Variable",
+        choices = columns
       ),
       checkboxInput(
         inputId = "colorCheckbox",
@@ -68,11 +80,11 @@ ui <- grid_page(
       tabsetPanel(
         nav_panel(
           title = "Feature Comparison",
-          plotlyOutput(outputId = "plot-Scatter")
+          plotlyOutput(outputId = "plotScatter")
         ),
         nav_panel(
           title = "Top Artist Features",
-          plotlyOutput(outputId = "plot-Box")
+          plotlyOutput(outputId = "plotBox")
         )
       )
     )
@@ -82,6 +94,9 @@ ui <- grid_page(
 ### ---- Define server ----
 
 server <- function(input, output) {
+  observeEvent(input$xVar, {
+    updateSelectInput(inputId = "yVar", choices = columns[columns != input$xVar])
+  })
   #use across to calculate the mean of all numeric variables by genre and keep top n based on slider value
   artist_stats <- data_music %>% summarize(.by = artist_name,
                                            across(where(is.numeric), mean)) %>%
@@ -92,20 +107,38 @@ server <- function(input, output) {
   topFiveList <- artist_stats %>%
     head(5)
   
-  
   #Grab top 5 artists for boxplot only
   top_five <- data_music %>% filter(artist_name %in% topFiveList$artist_name) %>% 
     distinct(track_name, .keep_all = TRUE)
   
-  #Insert plotly scatter plot here
-  output$plot-Scatter <- renderPlotly({
-    plot_ly(z = ~volcano, type = "surface")
-  })
+  basePlot = top_five %>% plot_ly()
+  
+  
+#  if (input$colorCheckbox == FALSE){
+    output$plotScatter <- renderPlotly({
+      basePlot %>% 
+        add_markers(x = paste0("~", input$xVar) %>% as.formula,
+                    y = paste0("~", input$yVar) %>% as.formula )
+    })
+    
+ # }
+  #else{
+   # output$plotScatter <- renderPlotly({
+    #  basePlot %>% 
+     #   add_markers(x = paste0("~", input$xVar) %>% as.formula,
+      #              y = paste0("~", input$yVar) %>% as.formula )
+  #  })
+    
+#  }
 
   #Insert plotly boxplot here
-  output$plot-Box <- renderPlotly({
-    plot_ly(z = ~volcano, type = "surface")
+  output$plotBox <- renderPlotly({
+    basePlot %>%
+      add_trace(x = paste0("~", input$xVar) %>% as.formula, type = "box")
   })
 }
 
-  
+
+### ---- Run app ----
+shinyApp(ui, server)
+

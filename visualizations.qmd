@@ -11,7 +11,7 @@ format:
 
 # load packages
 library(tidyverse)
-data_music = load("C:/Users/conno/Dropbox/PC/Downloads/DANA320/hehe/spotify-shiny/data-music.RData")
+load("C:/Users/conno/Dropbox/PC/Downloads/DANA320/hehe/spotify-shiny/data-music.RData")
 
 
 ```
@@ -26,11 +26,7 @@ head(data_music)
 ### Aesthetic mapping 
 
 ```{r}
-
-ggplot(data = diamonds,
-  aes(x = carat,
-       y = price))+
-  geom_point()
+colnames(data_music[,sapply(data_music,is.numeric)])
 
 ```
 
