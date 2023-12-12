@@ -14,16 +14,17 @@ library(bslib)
 library(dplyr)
 
 load("data-music.RData")
-head(data_music)
 
+# static version of slider control
+slider_val <- 10
 
 ### ---- Define UI ----
 
 ui <- grid_page(
   layout = c(
-    "header  header  ",
-    "sidebar plotGrid",
-    ".       .       "
+    "header  header ",
+    "sidebar tabArea",
+    ".       .      "
   ),
   row_sizes = c(
     "70px",
@@ -62,37 +63,16 @@ ui <- grid_page(
     is_title = FALSE
   ),
   grid_card(
-    area = "plotGrid",
+    area = "tabArea",
     card_body(
-      grid_container(
-        layout = c(
-          "plot1 plot2",
-          "plot3 plot4"
+      tabsetPanel(
+        nav_panel(
+          title = "Feature Comparison",
+          plotlyOutput(outputId = "plot-Scatter")
         ),
-        row_sizes = c(
-          "1fr",
-          "1fr"
-        ),
-        col_sizes = c(
-          "1fr",
-          "1fr"
-        ),
-        gap_size = "10px",
-        grid_card(
-          area = "plot1",
-          card_body(plotlyOutput(outputId = "plotOutput1"))
-        ),
-        grid_card(
-          area = "plot2",
-          card_body(plotlyOutput(outputId = "plotOutput2"))
-        ),
-        grid_card(
-          area = "plot3",
-          card_body(plotlyOutput(outputId = "plotOutput3"))
-        ),
-        grid_card(
-          area = "plot4",
-          card_body(plotlyOutput(outputId = "plotOutput4"))
+        nav_panel(
+          title = "Top Artist Features",
+          plotlyOutput(outputId = "plot-Box")
         )
       )
     )
@@ -102,50 +82,30 @@ ui <- grid_page(
 ### ---- Define server ----
 
 server <- function(input, output) {
-  #Keep the top N number of artists based on the slider in order of popularity
-  ####couldn't get this code to work!
-  #numArtists <- input$topArtists
-  #chosenArtists <- data_music %>% 
-    #arrange(-popularity) %>% 
-    #distinct(artist, .keep_all = TRUE) %>% 
-    #head(numArtists)
+  #use across to calculate the mean of all numeric variables by genre and keep top n based on slider value
+  artist_stats <- data_music %>% summarize(.by = artist_name,
+                                           across(where(is.numeric), mean)) %>%
+    arrange(-popularity) %>% 
+    distinct(artist_name, .keep_all = TRUE) %>% 
+    slice_head(n=slider_val)
   
-  output$plotOutput1 <- renderPlot({
-    thing1 <- ggplot(data = data_music) + 
-      geom_point(aes(x = energy,
-                     y = loudness)) +
-      labs(title = "Energy vs Loudness for Top Artists", #descriptive labels
-           x = "Energy Level",
-           y = "Loudness")
-    print(thing1)
+  topFiveList <- artist_stats %>%
+    head(5)
+  
+  
+  #Grab top 5 artists for boxplot only
+  top_five <- data_music %>% filter(artist_name %in% topFiveList$artist_name) %>% 
+    distinct(track_name, .keep_all = TRUE)
+  
+  #Insert plotly scatter plot here
+  output$plot-Scatter <- renderPlotly({
+    plot_ly(z = ~volcano, type = "surface")
   })
-  
-  output$plotOutput2 <- renderPlot({
-    ggplot(data = data_music) + 
-      geom_point(aes(x = energy,
-                     y = loudness)) +
-      labs(title = "Energy vs Loudness for Top Artists", #descriptive labels
-           x = "Energy Level",
-           y = "Loudness")
-  })
-  
-  output$plotOutput3 <- renderPlot({
-    ggplot(data = data_music) + 
-      geom_point(aes(x = energy,
-                     y = loudness)) +
-      labs(title = "Energy vs Loudness for Top Artists", #descriptive labels
-           x = "Energy Level",
-           y = "Loudness")
-  })
-  
-  output$plotOutput4 <- renderPlot({
-    ggplot(data = data_music) + 
-      geom_point(aes(x = energy,
-                     y = loudness)) +
-      labs(title = "Energy vs Loudness for Top Artists", #descriptive labels
-           x = "Energy Level",
-           y = "Loudness")
+
+  #Insert plotly boxplot here
+  output$plot-Box <- renderPlotly({
+    plot_ly(z = ~volcano, type = "surface")
   })
 }
-### ---- Run app ----
-shinyApp(ui, server)
+
+  
