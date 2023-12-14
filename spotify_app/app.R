@@ -12,6 +12,7 @@ library(plotly)
 library(gridlayout)
 library(bslib)
 library(dplyr)
+library(DT)
 
 load("data-music.RData")
 
@@ -24,67 +25,129 @@ columns <- colnames(data_music[,sapply(data_music,is.numeric)])
 
 ui <- grid_page(
   layout = c(
-    "header  header ",
-    "sidebar tabArea",
-    ".       .      "
+    "header",
+    "area3 ",
+    "area3 "
   ),
   row_sizes = c(
-    "70px",
-    "1.72fr",
-    "0.28fr"
+    "40px",
+    "0.88fr",
+    "1.12fr"
   ),
   col_sizes = c(
-    "250px",
     "1fr"
   ),
   gap_size = "1rem",
-  grid_card(
-    area = "sidebar",
-    card_header("Controls"),
-    card_body(
-      sliderInput(
-        inputId = "nArtists",
-        label = "Top N Artists",
-        min = 1,
-        max = 100,
-        value = 20,
-        width = "100%",
-        step = 10
-      ),
-      selectInput(
-        inputId = "xVar",
-        label = "Select X Variable",
-        choices = columns
-      ),
-      selectInput(
-        inputId = "yVar",
-        label = "Select Y Variable",
-        choices = columns
-      ),
-      checkboxInput(
-        inputId = "colorCheckbox",
-        label = "Color by genre",
-        value = FALSE
-      )
-    )
-  ),
   grid_card_text(
     area = "header",
-    content = "Spotify Genre Comparison",
+    content = "Spotify Popular Artists",
     alignment = "center",
     is_title = FALSE
   ),
   grid_card(
-    area = "tabArea",
+    area = "area3",
     card_body(
       tabsetPanel(
         nav_panel(
-          title = "Feature Comparison",
-          plotlyOutput(outputId = "plotScatter")
+          title = "Scatter Plot Comparison",
+          grid_container(
+            layout = c(
+              "area0 area1"
+            ),
+            row_sizes = c(
+              "1fr"
+            ),
+            col_sizes = c(
+              "0.48fr",
+              "1.52fr"
+            ),
+            gap_size = "10px",
+            grid_card(
+              area = "area0",
+              full_screen = TRUE,
+              card_header("Controls"),
+              card_body(
+                sliderInput(
+                  inputId = "nArtists",
+                  label = "Top N Artists",
+                  min = 1,
+                  max = 100,
+                  value = 20,
+                  width = "100%",
+                  step = 10
+                ),
+                selectInput(
+                  inputId = "xVar",
+                  label = "Select X Variable",
+                  choices = columns
+                ),
+                selectInput(
+                  inputId = "yVar",
+                  label = "Select Y Variable",
+                  choices = columns
+                ),
+                checkboxInput(
+                  inputId = "colorCheckbox",
+                  label = "Color by genre",
+                  value = FALSE
+                )
+              )
+            ),
+            grid_card(
+              area = "area1",
+              card_body(plotlyOutput(outputId = "plotScatter"))
+            )
+          )
         ),
         nav_panel(
-          title = "Top Artist Features",
-          plotlyOutput(outputId = "plotBox")
+          title = "Box Plot Comparison",
+          grid_container(
+            layout = c(
+              "area0 area1"
+            ),
+            row_sizes = c(
+              "1fr"
+            ),
+            col_sizes = c(
+              "0.48fr",
+              "1.52fr"
+            ),
+            gap_size = "10px",
+            grid_card(
+              area = "area0",
+              full_screen = TRUE,
+              card_header("Controls"),
+              card_body(
+                sliderInput(
+                  inputId = "nArtists2",
+                  label = "Top N Artists",
+                  min = 1,
+                  max = 100,
+                  value = 20,
+                  width = "100%",
+                  step = 10
+                ),
+                selectInput(
+                  inputId = "xVar2",
+                  label = "Select Variable to Compare",
+                  choices = columns
+                ),
+                checkboxInput(
+                  inputId = "colorCheckbox2",
+                  label = "Color by genre",
+                  value = FALSE
+                )
+              )
+            ),
+            grid_card(
+              area = "area1",
+              card_body(plotlyOutput(outputId = "plotBox"))
+            )
+          )
+        ),
+        nav_panel(
+          title = "Most Popular Artist Stats",
+          DTOutput(outputId = "myTable", width = "100%")
         )
       )
     )
@@ -94,49 +157,62 @@ ui <- grid_page(
 ### ---- Define server ----
 
 server <- function(input, output) {
-  observeEvent(input$xVar, {
-    updateSelectInput(inputId = "yVar", choices = columns[columns != input$xVar])
-  })
-  #use across to calculate the mean of all numeric variables by genre and keep top n based on slider value
+  
+  # decided not to filter yVar to exclude the selected xVar because it made it more difficult to use
+  # since it recalculates it changes the other var without the user meaning to do so
+  
+  #calculate the mean of all numeric variables by genre and keep top n based on slider value # nolint: line_length_linter.
   artist_stats <- data_music %>% summarize(.by = artist_name,
                                            across(where(is.numeric), mean)) %>%
     arrange(-popularity) %>% 
-    distinct(artist_name, .keep_all = TRUE) %>% 
-    slice_head(n=slider_val)
+    distinct(artist_name, .keep_all = TRUE)
   
-  topFiveList <- artist_stats %>%
-    head(5)
-  
-  #Grab top 5 artists for boxplot only
-  top_five <- data_music %>% filter(artist_name %in% topFiveList$artist_name) %>% 
-    distinct(track_name, .keep_all = TRUE)
-  
-  basePlot = top_five %>% plot_ly()
-  
-  
-#  if (input$colorCheckbox == FALSE){
-    output$plotScatter <- renderPlotly({
+  output$plotScatter <- renderPlotly({
+    topNList <- artist_stats %>% head(input$nArtists)
+    topN <- data_music %>% filter(artist_name %in% topNList$artist_name) %>% 
+      distinct(track_name, .keep_all = TRUE)
+    
+    basePlot = topN %>% plot_ly()
+    
+    if (input$colorCheckbox == FALSE) {
+      #TODO- make labels cleaner
       basePlot %>% 
         add_markers(x = paste0("~", input$xVar) %>% as.formula,
                     y = paste0("~", input$yVar) %>% as.formula )
-    })
-    
- # }
-  #else{
-   # output$plotScatter <- renderPlotly({
-    #  basePlot %>% 
-     #   add_markers(x = paste0("~", input$xVar) %>% as.formula,
-      #              y = paste0("~", input$yVar) %>% as.formula )
-  #  })
-    
-#  }
-
-  #Insert plotly boxplot here
+    }
+    else{
+      #TODO- make labels cleaner
+      basePlot %>% 
+        add_markers(x = paste0("~", input$xVar) %>% as.formula,
+                    y = paste0("~", input$yVar) %>% as.formula,
+                    color = ~genre)
+    }
+  })
+  
   output$plotBox <- renderPlotly({
-    basePlot %>%
-      add_trace(x = paste0("~", input$xVar) %>% as.formula, type = "box")
+    topNList <- artist_stats %>% head(input$nArtists2)
+    topN <- data_music %>% filter(artist_name %in% topNList$artist_name) %>% 
+      distinct(track_name, .keep_all = TRUE)
+    
+    basePlot = topN %>% plot_ly()
+    
+    if (input$colorCheckbox2 == FALSE) {
+      #TODO- make labels cleaner
+      basePlot %>%
+        add_trace(x = paste0("~", input$xVar2) %>% as.formula, name = "all genres", type = "box")
+    }
+    else{
+      #TODO- make labels cleaner
+      basePlot %>%
+        add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box") 
+    }
+  })
+  output$myTable = renderDT({
+    #TODO- drop columns
+    artist_stats
   })
 }
+
 
 
 ### ---- Run app ----
