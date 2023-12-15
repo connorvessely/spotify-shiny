@@ -70,7 +70,7 @@ ui <- grid_page(
                 sliderInput(
                   inputId = "nArtists",
                   label = "Top N Artists",
-                  min = 1,
+                  min = 10,
                   max = 100,
                   value = 20,
                   width = "100%",
@@ -175,17 +175,22 @@ server <- function(input, output) {
     basePlot = topN %>% plot_ly()
     
     if (input$colorCheckbox == FALSE) {
-      #TODO- make labels cleaner
-      basePlot %>% 
-        add_markers(x = paste0("~", input$xVar) %>% as.formula,
-                    y = paste0("~", input$yVar) %>% as.formula )
-    }
-    else{
-      #TODO- make labels cleaner
       basePlot %>% 
         add_markers(x = paste0("~", input$xVar) %>% as.formula,
                     y = paste0("~", input$yVar) %>% as.formula,
-                    color = ~genre)
+                    hovertemplate = paste(~genre) %>% as.formula,
+                    showlegend = FALSE,
+                    name = " ") %>%
+        layout(title = 'Genre Attribute Comparison of Most Popular Artists')
+    }
+    else{
+      basePlot %>% 
+        add_markers(x = paste0("~", input$xVar) %>% as.formula,
+                    y = paste0("~", input$yVar) %>% as.formula,
+                    color = ~genre,
+                    hovertemplate = paste('<b>Genre</b>: '),
+                    showlegend = FALSE) %>%
+        layout(title = 'Genre Attribute Comparison of Most Popular Artists')
     }
   })
   
@@ -199,12 +204,17 @@ server <- function(input, output) {
     if (input$colorCheckbox2 == FALSE) {
       #TODO- make labels cleaner
       basePlot %>%
-        add_trace(x = paste0("~", input$xVar2) %>% as.formula, name = "all genres", type = "box")
+        add_trace(x = paste0("~", input$xVar2) %>% as.formula, name = "all genres",
+                  hovertemplate = paste('<b>Genre</b>: '), type = "box",
+                  name = " ") %>%
+        layout(title = 'Attribute Stats of Most Popular Artists')
     }
     else{
       #TODO- make labels cleaner
       basePlot %>%
-        add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box") 
+        add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box",
+                  name = " ") %>%
+        layout(title = 'Attribute Stats of Most Popular Artists')
     }
   })
   output$myTable = renderDT({
