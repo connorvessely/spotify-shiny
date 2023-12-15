@@ -205,7 +205,7 @@ server <- function(input, output) {
     else{
       topN %>% plot_ly() %>%
         add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box") %>%
-        layout(title = str_to_title(paste0(input$xVar2," for ",input$nArtists,  " most popular artists")))
+        layout(title = str_to_title(paste0(input$xVar2," for ",input$nArtists2,  " most popular artists")))
     }
   })
   output$myTable = renderDT({
