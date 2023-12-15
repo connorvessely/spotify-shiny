@@ -13,26 +13,24 @@ library(gridlayout)
 library(bslib)
 library(dplyr)
 library(DT)
-
 load("data-music.RData")
-
-# static version of slider control
-slider_val <- 10
-
-columns <- colnames(data_music[,sapply(data_music,is.numeric)])
+og_vars = colnames(data_music[,sapply(data_music,is.numeric)])
+vars = character(length(og_vars))
+for (i in seq_along(og_vars)) {
+  vars[i] = str_to_title(og_vars[i])
+}
+columns <- setNames(og_vars, vars)
 
 ### ---- Define UI ----
 
 ui <- grid_page(
   layout = c(
     "header",
-    "area3 ",
     "area3 "
   ),
   row_sizes = c(
     "40px",
-    "0.88fr",
-    "1.12fr"
+    "1fr"
   ),
   col_sizes = c(
     "1fr"
@@ -84,7 +82,8 @@ ui <- grid_page(
                 selectInput(
                   inputId = "yVar",
                   label = "Select Y Variable",
-                  choices = columns
+                  choices = columns,
+                  selected = columns
                 ),
                 checkboxInput(
                   inputId = "colorCheckbox",
@@ -121,7 +120,7 @@ ui <- grid_page(
                 sliderInput(
                   inputId = "nArtists2",
                   label = "Top N Artists",
-                  min = 1,
+                  min = 10,
                   max = 100,
                   value = 20,
                   width = "100%",
@@ -146,8 +145,8 @@ ui <- grid_page(
           )
         ),
         nav_panel(
-          title = "Most Popular Artist Stats",
-          DTOutput(outputId = "myTable", width = "100%")
+          title = "Most Popular Artists",
+          DTOutput(outputId = "myTable", width = "55%")
         )
       )
     )
@@ -172,25 +171,23 @@ server <- function(input, output) {
     topN <- data_music %>% filter(artist_name %in% topNList$artist_name) %>% 
       distinct(track_name, .keep_all = TRUE)
     
-    basePlot = topN %>% plot_ly()
-    
     if (input$colorCheckbox == FALSE) {
-      basePlot %>% 
+      topN %>% plot_ly() %>% 
         add_markers(x = paste0("~", input$xVar) %>% as.formula,
                     y = paste0("~", input$yVar) %>% as.formula,
-                    hovertemplate = paste(~genre) %>% as.formula,
-                    showlegend = FALSE,
-                    name = " ") %>%
-        layout(title = 'Genre Attribute Comparison of Most Popular Artists')
+                    text = ~str_to_title(paste0(input$xVar,": ", get(input$xVar),"<br>", input$yVar,": ", get(input$yVar),"<br>genre: ", genre)),
+                    ) %>%
+        layout(title = str_to_title(paste0(input$xVar," and ",input$yVar, " comparison for ",input$nArtists,  " most popular artists")))
     }
     else{
-      basePlot %>% 
+      topN %>% plot_ly() %>% 
         add_markers(x = paste0("~", input$xVar) %>% as.formula,
                     y = paste0("~", input$yVar) %>% as.formula,
                     color = ~genre,
-                    hovertemplate = paste('<b>Genre</b>: '),
-                    showlegend = FALSE) %>%
-        layout(title = 'Genre Attribute Comparison of Most Popular Artists')
+                    text = ~str_to_title(paste0(input$xVar,": ", get(input$xVar),"<br>", input$yVar,": ", get(input$yVar),"<br>genre: ", genre)),
+        ) %>%
+        layout(title = str_to_title(paste0(input$xVar," and ",input$yVar, " comparison for ",input$nArtists,  " most popular artists")))
+      
     }
   })
   
@@ -199,27 +196,21 @@ server <- function(input, output) {
     topN <- data_music %>% filter(artist_name %in% topNList$artist_name) %>% 
       distinct(track_name, .keep_all = TRUE)
     
-    basePlot = topN %>% plot_ly()
-    
     if (input$colorCheckbox2 == FALSE) {
-      #TODO- make labels cleaner
-      basePlot %>%
+      topN %>% plot_ly() %>%
         add_trace(x = paste0("~", input$xVar2) %>% as.formula, name = "all genres",
-                  hovertemplate = paste('<b>Genre</b>: '), type = "box",
-                  name = " ") %>%
-        layout(title = 'Attribute Stats of Most Popular Artists')
+                  type = "box")%>%
+        layout(title = str_to_title(paste0(input$xVar2," for ",input$nArtists2,  " most popular artists")))
     }
     else{
-      #TODO- make labels cleaner
-      basePlot %>%
-        add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box",
-                  name = " ") %>%
-        layout(title = 'Attribute Stats of Most Popular Artists')
+      topN %>% plot_ly() %>%
+        add_trace(x = paste0("~", input$xVar2) %>% as.formula, color = ~genre, type = "box") %>%
+        layout(title = str_to_title(paste0(input$xVar2," for ",input$nArtists,  " most popular artists")))
     }
   })
   output$myTable = renderDT({
-    #TODO- drop columns
-    artist_stats
+    artists <- artist_stats %>% select(c(artist_name,popularity))
+    artists
   })
 }
 
